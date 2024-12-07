@@ -1,49 +1,63 @@
-import { createPublicClient, createWalletClient, http, parseAbi } from "viem"
-import { arbitrumSepolia } from "viem/chains"
-import { privateKeyToAccount } from "viem/accounts"
-import "dotenv/config"
+import { createPublicClient, createWalletClient, http, parseAbi } from "viem";
+import { arbitrumSepolia } from "viem/chains";
+import { privateKeyToAccount } from "viem/accounts";
+import "dotenv/config";
 
+// ABI del contrato
 const ABI = parseAbi([
-  "function get_value() view returns (uint256)",
-  "function set_value(uint256) public",
-])
+  "function buy_property(uint256 property_id) public",
+  "function get_property(uint256 property_id) view returns (address owner, bool is_sold)"
+]);
 
-const account = privateKeyToAccount((process as any).env.PRIVATE_KEY)
+// Configuración de la cuenta y cliente
+const account = privateKeyToAccount(process.env.PRIVATE_KEY);
 
 const client = createWalletClient({
   chain: arbitrumSepolia,
   transport: http(),
   account,
-})
+});
 
 const publicClient = createPublicClient({
   chain: arbitrumSepolia,
   transport: http(),
-})
+});
 
-// https://sepolia.arbiscan.io/address/const CONTRACT_ADDRESS = "0x46be8751225be83d7a9b97fec0214c53795d8477"
-const CONTRACT_ADDRESS = "0x46be8751225be83d7a9b97fec0214c53795d8477"
+// Dirección del contrato desplegado
+const CONTRACT_ADDRESS = "0xd00049150465636d1bb39a18004f990caea608b6"; // Actualiza con tu dirección
 
-async function write() {
-  const result = await client.writeContract({
-    abi: ABI,
-    address: CONTRACT_ADDRESS,
-    functionName: "set_value",
-    args: [BigInt(12)],
-  })
-
-  console.debug(`Contract: ${result}`)
+// Función para comprar una propiedad
+async function buyProperty(propertyId) {
+  try {
+    const result = await client.writeContract({
+      abi: ABI,
+      address: CONTRACT_ADDRESS,
+      functionName: "buy_property",
+      args: [BigInt(propertyId)],
+    });
+    console.debug(`Transaction hash: ${result}`);
+  } catch (error) {
+    console.error("Error buying property:", error);
+  }
 }
 
-async function read() {
-  const result = await publicClient.readContract({
-    abi: ABI,
-    address: CONTRACT_ADDRESS,
-    functionName: "get_value",
-  })
-
-  console.debug(`Contract: ${result}`)
+// Función para obtener detalles de una propiedad
+async function getProperty(propertyId) {
+  try {
+    const result = await publicClient.readContract({
+      abi: ABI,
+      address: CONTRACT_ADDRESS,
+      functionName: "get_property",
+      args: [BigInt(propertyId)],
+    });
+    console.debug(`Property Details: ${JSON.stringify(result)}`);
+  } catch (error) {
+    console.error("Error fetching property details:", error);
+  }
 }
 
-// read()
-// write()
+// Ejecución de pruebas (Descomenta según lo que quieras probar)
+(async () => {
+  // await buyProperty(1); // Cambia "1" por el ID de la propiedad que quieres comprar
+  // await getProperty(1); // Cambia "1" por el ID de la propiedad que quieres consultar
+})();

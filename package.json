@@ -10,7 +10,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "viem": "^2.21.53"
+    "viem": "^2.21.54"
   },
   "devDependencies": {
     "@types/node": "^22.10.1",
