@@ -3,75 +3,147 @@
 #include "../stylus-sdk-c/include/storage.h"
 #include "../stylus-sdk-c/include/string.h"
 
-#define STORAGE_SLOT__value 0x0
+#define MAX_PROPERTIES 10
+#define STORAGE_SLOT__properties 0x0 // Base slot for property storage
+#define STORAGE_SLOT__balance 0x10   // Slot for storing balance
 
-/**
- * General utils/helpers
- */
-
-// buffer used to write output, avoiding malloc
-uint8_t buf_out[32];
-
-// succeed and return a bebi32
-ArbResult inline _return_success_bebi32(bebi32 const retval)
+typedef struct
 {
-  ArbResult res = {Success, retval, 32};
+  uint8_t id[20];       // Property ID
+  uint8_t owner[32];    // Owner address
+  uint64_t price;       // Property price
+  uint8_t is_sold;      // 0 = available, 1 = sold
+} Property;
+
+// Temporary buffers to avoid malloc
+Property properties[MAX_PROPERTIES];
+uint8_t buf_out[32]; // Used for output
+
+// Helper to return success with a message
+ArbResult inline _return_success_msg(const char *msg)
+{
+  ArbResult res = {Success, (uint8_t *)msg, strlen(msg)};
   return res;
 }
 
-ArbResult set_value(uint8_t *input, size_t len)
+// Helper to save properties to storage
+void save_properties()
 {
-
-  if (len != 32)
-  {
-    // revert if input length is not 32 bytes
-    return _return_short_string(Failure, "InvalidLength");
-  }
-
-  uint8_t *slot_address = (uint8_t *)(STORAGE_SLOT__value + 0); // Get the slot address
-
-  // Allocate a temporary buffer to store the input
-  storage_cache_bytes32(slot_address, input);
-
-  // Flush the cache to store the value permanently
+  storage_cache_bytes32((uint8_t *)STORAGE_SLOT__properties, (uint8_t *)properties);
   storage_flush_cache(false);
-  return _return_success_bebi32(input);
 }
 
-ArbResult get_value(uint8_t *input, size_t len)
+// Helper to load properties from storage
+void load_properties()
 {
+  storage_load_bytes32((uint8_t *)STORAGE_SLOT__properties, (uint8_t *)properties);
+}
 
-  uint8_t *slot_address = (uint8_t *)(STORAGE_SLOT__value + 0); // Get the slot address
-
-  storage_load_bytes32(slot_address, buf_out);
-  if (bebi32_is_zero(buf_out))
+// Function to register a property
+ArbResult register_property(uint8_t *input, size_t len)
+{
+  if (len < 32 + 8)
   {
-    return _return_short_string(Failure, "NotSet");
+    return _return_short_string(Failure, "InvalidInput");
   }
 
-  return _return_success_bebi32(buf_out);
+  load_properties();
+
+  // Find a free slot
+  for (int i = 0; i < MAX_PROPERTIES; i++)
+  {
+    if (properties[i].id[0] == 0) // Empty slot
+    {
+      memcpy(properties[i].id, input, 20);
+      memcpy(properties[i].owner, input + 20, 32);
+      properties[i].price = *((uint64_t *)(input + 52));
+      properties[i].is_sold = 0;
+      save_properties();
+      return _return_success_msg("PropertyRegistered");
+    }
+  }
+
+  return _return_short_string(Failure, "NoFreeSlots");
 }
 
+// Function to list available properties
+ArbResult list_properties(uint8_t *input, size_t len)
+{
+  load_properties();
+
+  uint8_t *ptr = buf_out;
+  for (int i = 0; i < MAX_PROPERTIES; i++)
+  {
+    if (!properties[i].is_sold && properties[i].id[0] != 0)
+    {
+      memcpy(ptr, properties[i].id, 20);
+      ptr += 20;
+      *((uint64_t *)ptr) = properties[i].price;
+      ptr += 8;
+    }
+  }
+
+  return (ArbResult){Success, buf_out, ptr - buf_out};
+}
+
+// Function to buy a property
+ArbResult buy_property(uint8_t *input, size_t len)
+{
+  if (len < 20 + 8)
+  {
+    return _return_short_string(Failure, "InvalidInput");
+  }
+
+  load_properties();
+
+  uint8_t *property_id = input;
+  uint64_t payment = *((uint64_t *)(input + 20));
+
+  for (int i = 0; i < MAX_PROPERTIES; i++)
+  {
+    if (memcmp(properties[i].id, property_id, 20) == 0 && !properties[i].is_sold)
+    {
+      if (payment >= properties[i].price)
+      {
+        properties[i].is_sold = 1;
+        save_properties();
+
+        // Update balance
+        uint64_t balance;
+        storage_load_bytes32((uint8_t *)STORAGE_SLOT__balance, (uint8_t *)&balance);
+        balance += payment;
+        storage_cache_bytes32((uint8_t *)STORAGE_SLOT__balance, (uint8_t *)&balance);
+        storage_flush_cache(false);
+
+        return _return_success_msg("PurchaseSuccessful");
+      }
+      else
+      {
+        return _return_short_string(Failure, "InsufficientPayment");
+      }
+    }
+  }
+
+  return _return_short_string(Failure, "PropertyNotFound");
+}
+
+// Main handler
 int handler(size_t argc)
 {
-  // Save the function calldata
   uint8_t argv[argc];
-  read_args(argv); // 4 bytes for selector + function arguments
+  read_args(argv);
 
-  // Define the registry array with registered functions
   FunctionRegistry registry[] = {
-      {to_function_selector("set_value(uint256)"), set_value},
-      {to_function_selector("get_value()"), get_value},
-      // Add more functions as needed here
+      {to_function_selector("register_property(bytes,uint256)"), register_property},
+      {to_function_selector("list_properties()"), list_properties},
+      {to_function_selector("buy_property(bytes,uint256)"), buy_property},
   };
 
-  uint32_t signature = *((uint32_t *)argv); // Parse function selector
+  uint32_t signature = *((uint32_t *)argv);
 
-  // Call the function based on the signature
   ArbResult res = call_function(registry,
                                 sizeof(registry) / sizeof(registry[0]),
-                                signature, argv + 4, argc - 4 // Exclude the selector from calldata
-  );
+                                signature, argv + 4, argc - 4);
   return (write_result(res.output, res.output_len), res.status);
 }
 
