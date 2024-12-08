@@ -5,7 +5,7 @@
 #define STORAGE_SLOT__balance (uint8_t *)0x10   // Puntero adecuado si es una dirección.
 #define STORAGE_SLOT__properties (uint8_t *)0x20 // Asumimos que este es otro valor de almacenamiento.
 
-ArbResult update_balance(Address owner, uint256_t amount, uint8_t *storage_slot);
+ArbResult update_balance(uint8_t *owner, uint256_t amount, uint8_t *storage_slot);
 
 ArbResult register_property(uint8_t *input, size_t input_len) {
     Property property;
@@ -30,7 +30,7 @@ ArbResult buy_property(uint8_t *input, size_t input_len) {
     if (read_property_data(input, &property, &offer_price) == 0) {
         if (offer_price >= property.price) {
             update_balance(property.owner, offer_price, STORAGE_SLOT__balance);
-            transfer_property(&property, input, STORAGE_SLOT__properties);
+            transfer_property(&property, (char *)input, STORAGE_SLOT__properties);
             result.code = 0;
             result.message = "Property purchased successfully";
         }
@@ -39,8 +39,8 @@ ArbResult buy_property(uint8_t *input, size_t input_len) {
     return result;
 }
 
-void list_properties(uint8_t *input, size_t len);
- {
+ArbResult list_properties(uint8_t *input, size_t len)
+{
     // Aquí implementarías la lógica para listar las propiedades.
     ArbResult result = {0, "Properties listed successfully"};
     // Ejemplo de procesamiento...
@@ -67,9 +67,10 @@ int main() {
 }
 
 // Definición de las funciones faltantes:
-ArbResult update_balance(Address owner, uint256_t amount, uint8_t *storage_slot) {
+ArbResult update_balance(uint8_t *owner, uint256_t amount, uint8_t *storage_slot)
+{
     // Implementación de la función de actualización de balance.
     ArbResult result = {0, "Balance updated successfully"};
     // Aquí iría la lógica para actualizar el balance del owner en storage_slot
-    return result;
+    return (result);
 }

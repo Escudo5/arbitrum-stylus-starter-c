@@ -32,7 +32,7 @@ extern uint8_t buf_out[32]; // Buffer for output
 
 // Funciones para la gestión de propiedades
 ArbResult register_property(uint8_t *input, size_t size);
-void list_properties(uint8_t *input, size_t len);
+ArbResult list_properties(uint8_t *input, size_t len);
 void save_property_to_storage(Property *property, const uint8_t *hash, uint8_t slot);
 void read_purchase_data(uint8_t *input, uint8_t *property_id, uint256_t *offer_price, uint8_t *buyer);
 ArbResult buy_property(uint8_t *input, size_t data_len);
@@ -44,7 +44,7 @@ int get_user_reputation(uint8_t *user_address);
 void update_user_reputation(uint8_t *user_address, int change);
 void emit_sale_event(uint8_t *buyer, uint8_t *seller, uint8_t *property_id, uint64_t price, const uint8_t *hash);
 void fail_transaction(const char *message);
-ArbResult update_balance(Address owner, uint256_t amount, uint8_t *storage_slot);
+ArbResult update_balance(uint8_t *owner, uint256_t amount, uint8_t *storage_slot);
 void transfer_property(Property *property, Address new_owner, uint8_t *storage_slot);
 void list_all_properties(uint8_t slot);
 int read_property_data(uint8_t *input, Property *property, uint256_t *price);

@@ -1,5 +1,5 @@
 STACK_SIZE=1024
-CC=clang
+CC=/opt/wasi-sdk/bin/clang
 LD=wasm-ld
 CFLAGS=-Iinclude/ -Istylus-sdk-c/include --target=wasm32-wasi -Os -Wall -g
 LDFLAGS=-O2 --no-entry --stack-first -z stack-size=$(STACK_SIZE)
