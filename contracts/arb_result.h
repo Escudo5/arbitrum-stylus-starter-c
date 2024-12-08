@@ -5,6 +5,6 @@
 typedef struct {
     int code;            // Código de estado
     const char *message; // Mensaje de estado
-} ArbResult;
+} ArbResultPedro;
 
 #endif // ARB_RESULT_H

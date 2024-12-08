@@ -7,7 +7,8 @@
 #ifndef STYLUS_SDK_H
 #define STYLUS_SDK_H
 
-#include "stylus_entry.h"
+#include "./stylus_entry.h"
+#include "../contracts/arb_result.h"
 
 #ifdef __cplusplus
 extern "C"
@@ -29,18 +30,18 @@ extern "C"
   typedef struct
   {
     uint32_t signature;
-    ArbResult (*function)(uint8_t *input, size_t len);
+    ArbResultPedro (*function)(uint8_t *input, size_t len);
   } FunctionRegistry;
 
   // Iterate through the registry to find the function with the matching signature
-  ArbResult call_function(FunctionRegistry *registry, uint8_t registry_size, uint32_t signature, uint8_t *input, size_t len)
+  ArbResultPedro call_function(FunctionRegistry *registry, uint8_t registry_size, uint32_t signature, uint8_t *input, size_t len)
   {
     for (uint8_t i = 0; i < registry_size; i++) // Loop until the sentinel is found
     {
       if (registry[i].signature == signature)
         return registry[i].function(input, len); // Call the function if signature matches
     }
-    return _return_nodata(Success); // Return failure if function not found
+    return (ArbResultPedro){-1, ""}; // Return error if no function is found
   }
 
   uint32_t to_function_selector(const char *function_abi)

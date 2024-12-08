@@ -24,18 +24,29 @@ const publicClient = createPublicClient({
 });
 
 // Dirección del contrato desplegado
-const CONTRACT_ADDRESS = "0xd00049150465636d1bb39a18004f990caea608b6"; // Actualiza con tu dirección
+const CONTRACT_ADDRESS = "0x35359e90606838bc2dbc0da9a462d7401ba795ff"; // Actualiza con tu dirección
 
 // Función para comprar una propiedad
 async function buyProperty(propertyId) {
   try {
+    // Enviar la transacción
     const result = await client.writeContract({
       abi: ABI,
       address: CONTRACT_ADDRESS,
       functionName: "buy_property",
       args: [BigInt(propertyId)],
     });
-    console.debug(`Transaction hash: ${result}`);
+    
+    console.debug(`Transaction hash: ${result.hash}`);
+    
+    // Esperar confirmación de la transacción
+    const receipt = await client.waitForTransactionReceipt(result.hash);
+    
+    if (receipt.status === 'success') {
+      console.log(`Property ${propertyId} bought successfully!`);
+    } else {
+      console.error(`Transaction failed: ${receipt.status}`);
+    }
   } catch (error) {
     console.error("Error buying property:", error);
   }
@@ -58,6 +69,6 @@ async function getProperty(propertyId) {
 
 // Ejecución de pruebas (Descomenta según lo que quieras probar)
 (async () => {
-  // await buyProperty(1); // Cambia "1" por el ID de la propiedad que quieres comprar
-  // await getProperty(1); // Cambia "1" por el ID de la propiedad que quieres consultar
+   await buyProperty(1); // Cambia "1" por el ID de la propiedad que quieres comprar
+   await getProperty(1); // Cambia "1" por el ID de la propiedad que quieres consultar
 })();

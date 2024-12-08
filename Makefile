@@ -1,7 +1,7 @@
 STACK_SIZE=1024
 CC=/opt/wasi-sdk/bin/clang
 LD=wasm-ld
-CFLAGS=-Iinclude/ -Istylus-sdk-c/include --target=wasm32-wasi -Os -Wall -g
+CFLAGS=-Iinclude/ -Istylus-sdk-c/include --target=wasm32-wasi -Os -Wall -g  -I./libs/keccak
 LDFLAGS=-O2 --no-entry --stack-first -z stack-size=$(STACK_SIZE)
 
 NAME = contract.wasm
