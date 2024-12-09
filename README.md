@@ -1,6 +1,7 @@
 # VERIFY: Revolutionizing Real Estate
 
 **Building Trust. Securing Transactions.**
+
 Frontend: https://17t.1da.myftpupload.com/
 
 Presentacion .pptx: https://docs.google.com/presentation/d/1y9QW2KJn3XWhRlfamPtfSMxoJ2UjS1UV/edit?usp=sharing&ouid=109481144673338878120&rtpof=true&sd=true
